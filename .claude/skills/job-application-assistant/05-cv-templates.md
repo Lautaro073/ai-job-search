@@ -1,5 +1,5 @@
 ---
-framework_version: 1.2.0
+framework_version: 1.2.1
 ---
 
 # CV Templates and Tailoring Guide
