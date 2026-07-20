@@ -100,6 +100,10 @@ Two related patterns are fine and should be kept:
 - `\vspace{1pt}` immediately after `\section{...}` (between section heading and first item) - this is between the heading and the list, not between list items.
 - `\vspace{3pt}` between top-level `\cventry` blocks in Professional Experience or Education - this gives breathing room between roles and renders consistently.
 
+### Section headings must match the CV's language (important)
+
+`\section{Core Competencies}`, `\section{Professional Experience}`, `\section{Education}`, `\section{Languages}`, `\section{References}`, `\section{Independent Projects}`, and the `Available upon request.` line under References are all **literal English text baked into the template** - they do not translate themselves. When the CV language is Spanish (see `CV language` in the candidate profile), every one of these must be swapped by hand: `Competencias Clave`, `Experiencia Profesional`, `Educaci\'on`, `Idiomas`, `Referencias`, `Proyectos Independientes`, `Disponibles a solicitud.` A CV with a Spanish profile statement and body copy but English section headers reads as sloppy and inconsistent - check this explicitly during the verification pass, since it's easy to translate the prose and forget the scaffolding around it.
+
 ## Section-by-Section Tailoring
 
 ### Profile Statement / Elevator Pitch (Best Practice)
