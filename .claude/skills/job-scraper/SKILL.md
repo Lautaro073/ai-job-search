@@ -99,13 +99,13 @@ For every candidate:
 - Skip if the URL or company+title combo already exists in `seen_jobs.json`
 - Skip if the company+role already appears in `job_search_tracker.csv`
 
-### Step 2.5: Mass-Posting & Recycled-Listing Detection
+### Step 2.5: Mass-Posting Detection (within this run)
 
-Two distribution patterns are worth flagging to the user as a caution signal, not as an accusation against the employer - they describe how a listing is being distributed, not a verdict on whether the company is legitimate. Neither pattern alone proves anything is wrong (companies do legitimately hire the same role across several cities, and reposting after a gap is normal); flag it so the user can factor it in when deciding whether to invest time, don't downgrade fit or silently exclude the result because of it.
+A distribution pattern worth flagging to the user as a caution signal, not as an accusation against the employer - it describes how a listing is being distributed, not a verdict on whether the company is legitimate. It alone proves nothing is wrong (companies do legitimately hire the same role across several cities); flag it so the user can factor it in when deciding whether to invest time, don't downgrade fit or silently exclude the result because of it.
 
-**A. Mass-posting within this run.** If two or more results (from the same company, or sharing the same req/job ID visible in the URL or title) have substantially the same description and differ only in city/location/title, don't present them as separate rows. Consolidate into a single row and note the spread, e.g. "posted identically across 6 cities (BR, MX, GT)".
+If two or more results in this run's pool (from the same company, or sharing the same req/job ID visible in the URL or title) have substantially the same description and differ only in city/location/title, don't present them as separate rows. Consolidate into a single row and note the spread, e.g. "posted identically across 6 cities (BR, MX, GT)".
 
-**B. Recycled listing across runs.** Before adding a new candidate to `seen_jobs.json`, check whether an existing entry from the same company has a description that closely matches the new one but a different title - especially if the existing entry's `first_seen` date is more than a few weeks old. If so, note it as a recycled/evergreen listing when presenting the result.
+(The companion recycled-listing check, comparing against past runs, lives in Step 4 - it needs the stored description snippet that Step 4 writes.)
 
 ### Step 3: Quick Fit Assessment
 
@@ -117,7 +117,9 @@ For each new job, do a rapid fit check (NOT the full evaluation from `04-job-eva
 
 ### Step 4: Deduplicate & Store
 
-1. Add ALL fetched jobs (new and skipped) to `seen_jobs.json` with structure:
+1. Before writing each new candidate, run the **recycled-listing check**: compare its `snippet` (see schema below) against existing `seen_jobs.json` entries from the same company. If an existing entry's snippet closely matches the new one (same responsibilities/requirements text) but the title differs, and that entry's `first_seen` is more than a few weeks old, note it as a recycled/evergreen listing when presenting the result in Step 5. Company + different title alone is **not** sufficient grounds - genuine employers run several concurrent open roles; the snippet match, not the title mismatch, is what distinguishes a recycled posting from a legitimately different one. Entries from before the `snippet` field existed have nothing to compare against - skip the check for those rather than guessing.
+
+2. Add ALL fetched jobs (new and skipped) to `seen_jobs.json` with structure:
 ```json
 {
   "seen": {
@@ -128,7 +130,8 @@ For each new job, do a rapid fit check (NOT the full evaluation from `04-job-eva
       "first_seen": "YYYY-MM-DD",
       "fit": "high/medium/low",
       "status": "new/skipped/evaluated/ranked/expired",
-      "portal": "<source portal skill, e.g. jobindex-search>"
+      "portal": "<source portal skill, e.g. jobindex-search>",
+      "snippet": "<first ~200 chars of the job description, for the recycled-listing check above>"
     }
   }
 }
@@ -138,7 +141,7 @@ The `portal` field records which CLI skill produced the job (results are already
 
 `/rank` extends this schema additively: ranked entries also carry `rank_score` (0–100 overall score), `rank_verdict` (fit band, e.g. "strong fit"), and `rank_date` (ISO date of ranking). The `status` field is set to `"ranked"`. Do not drop any of these fields when re-writing entries.
 
-2. Only present jobs NOT already in the seen list or tracker.
+3. Only present jobs NOT already in the seen list or tracker.
 
 ### Step 4.5: Generate Referral Contact Links (High & Medium Fit Only)
 
@@ -205,13 +208,13 @@ health: <portal-name> - broken (0 results for the SKILL.md test query and a broa
 |---|-----|-------|---------|----------|----------|-----|
 | 1 | High | ... | ... | ... | ... | [Link](...) |
 
-If Step 2.5 flagged a mass-posting or recycled listing, note it in the Title cell (e.g. "Frontend Developer (posted in 6 cities)") rather than burying it - it's a signal the user should see at a glance, not just in the detail highlights below.
+If Step 2.5 or the Step 4 recycled-listing check flagged a mass-posting or recycled listing, note it in the Title cell (e.g. "Frontend Developer (posted in 6 cities)") rather than burying it - it's a signal the user should see at a glance, not just in the detail highlights below.
 
 ### High-Match Highlights
 For each high-match job, add 2-3 bullet points:
 - Why it matches your profile
 - Key requirements to check
-- Any red flags (including mass-posting/recycled-listing signals from Step 2.5)
+- Any red flags (including mass-posting/recycled-listing signals from Step 2.5/Step 4)
 
 ### Contacts
 For each high/medium-fit job from Step 4.5, add a short contacts block with the two
@@ -243,4 +246,4 @@ If the user decides to apply to any job, add a row to `job_search_tracker.csv`.
 6. **Parallel searches.** Run portal CLI searches in parallel; use WebSearch only for gaps the CLIs don't cover.
 7. **No automated people lookups.** Referral contacts (Step 4.5) are LinkedIn search links only - never fetch or scrape LinkedIn people-search result pages programmatically.
 8. **Health checks are bounded and honest.** Step 4.75 spends at most one probe, one retry, and (in `health` mode) one detail fetch per portal - a diagnosis, not a crawl. A rate-limit is never evidence of breakage. Health verdicts come only from observed CLI output; a portal that could not be tested is reported as inconclusive, never guessed. The `enabled` toggle is the only thing the health check may edit, and only with confirmation.
-9. **Flag distribution patterns, never accuse.** Mass-posting and recycled-listing signals (Step 2.5) describe how a listing is being distributed, not a claim that the employer is a scam. Never name a company as fraudulent or untrustworthy - present the observation and let the user decide.
+9. **Flag distribution patterns, never accuse.** Mass-posting (Step 2.5) and recycled-listing (Step 4) signals describe how a listing is being distributed, not a claim that the employer is a scam. Never name a company as fraudulent or untrustworthy - present the observation and let the user decide.
